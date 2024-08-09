@@ -10,6 +10,7 @@
 #define EMA_A 0.2f // filter coeficient (0..1 higher value gives less agressive filter - 1.0 would pass all data, unfiltered)
 #define ADC_BITS_TO_IGNORE 0 // Can reduce resolution if too noisy
 #define LED PC13
+#define DEADZONE 100 // Dead zone in ADC measurment at end stops
 
 struct pedal {
   uint32_t raw = 0;
@@ -41,8 +42,8 @@ void setup() {
   pedals[1].cc = 64;
   // Set inital ADC range, assuming pedals are at rest during power-up
   for (uint8_t i = 0; i < 2; ++i) {
-    pedals[i].limit_high = analogRead(pedals[i].pin) - 100;
-    pedals[i].limit_low = pedals[i].limit_high - 100;
+    pedals[i].limit_high = analogRead(pedals[i].pin) - DEADZONE;
+    pedals[i].limit_low = pedals[i].limit_high - DEADZONE;
   }
 }
 
@@ -55,10 +56,10 @@ void loop() {
   for (uint32_t i = 0; i < 2; ++i){
     pedals[i].raw = analogRead(pedals[i].pin);
     // Auto-calibration of pedal range
-    if (pedals[i].raw + 100 < pedals[i].limit_low)
-      pedals[i].limit_low = pedals[i].raw + 100;
-    if (pedals[i].raw - 100 > pedals[i].limit_high)
-      pedals[i].limit_high = pedals[i].raw - 100;
+    if (pedals[i].raw + DEADZONE < pedals[i].limit_low)
+      pedals[i].limit_low = pedals[i].raw + DEADZONE;
+    if (pedals[i].raw - DEADZONE > pedals[i].limit_high)
+      pedals[i].limit_high = pedals[i].raw - DEADZONE;
     if (pedals[i].raw < pedals[i].limit_low) {
       // Endstop
       if (pedals[i].cc_value < 127) {
